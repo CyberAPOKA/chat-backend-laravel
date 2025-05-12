@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Faker\Factory as Faker;
 
 class UserSeeder extends Seeder
 {
@@ -14,12 +15,23 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->create([
+
+        $faker = Faker::create();
+
+        User::create([
             'name' => 'Christian Steffens',
             'email' => 'oficialsteffens@hotmail.com',
+            'phone' => '51999304836',
             'password' => Hash::make('123123123'),
         ]);
 
-        User::factory(3)->create();
+        foreach (range(1, 10) as $i) {
+            User::create([
+                'name' => $faker->name,
+                'email' => $faker->safeEmail,
+                'phone' => $faker->numerify('###########'),
+                'password' => Hash::make('123123123'),
+            ]);
+        }
     }
 }
