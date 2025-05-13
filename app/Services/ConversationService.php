@@ -53,9 +53,12 @@ class ConversationService
         $contacts = $user->contacts()->pluck('users.id');
 
         $conversations = Conversation::whereHas('users', fn ($q) => $q->where('user_id', $userId))
-            ->whereHas('users', fn ($q) => $q->whereIn('user_id', $contacts))
+            ->where(function ($q) use ($contacts) {
+                $q->whereHas('users', fn ($q2) => $q2->whereIn('user_id', $contacts))
+                ->orWhereHas('messages');
+            })
             ->with([
-                'users' => fn ($q) => $q->where('users.id', '!=', $userId),
+                'users' => fn ($q) => $q->select('users.id', 'users.name', 'users.email', 'users.profile_photo_path'),
                 'messages' => fn ($q) => $q->latest()->limit(1),
             ])
             ->get()
@@ -63,7 +66,6 @@ class ConversationService
             ->values();
 
         $existingIds = $conversations->pluck('users')->flatten()->pluck('id')->toArray();
-
         $missingContacts = $user->contacts()->whereNotIn('users.id', $existingIds)->get();
 
         foreach ($missingContacts as $contact) {
@@ -75,20 +77,29 @@ class ConversationService
         }
 
         return $conversations->map(function ($conversation) use ($userId) {
-            $participant = $conversation->users->first();
+            $participant = $conversation->users->firstWhere('id', '!=', $userId);
             $lastMessage = $conversation->messages->first();
 
+            $meInConversation = $conversation->users->firstWhere('id', $userId);
+            $lastRead = optional($meInConversation?->pivot)->last_read_at;
+
+            $hasUnread = $lastMessage && $lastRead
+                ? $lastMessage->sent_at > $lastRead
+                : (bool) $lastMessage;
+
             return [
-                'id' => $participant->id,
-                'name' => $participant->name,
-                'email' => $participant->email,
-                'profile_photo_url' => $participant->profile_photo_url,
+                'id' => $participant?->id,
+                'name' => $participant?->name,
+                'email' => $participant?->email,
+                'profile_photo_url' => $participant?->profile_photo_url,
                 'last_message' => optional($lastMessage)->content,
                 'last_message_at' => optional($lastMessage)->sent_at,
                 'conversation_id' => $conversation->id,
+                'has_unread' => $hasUnread,
             ];
         });
     }
+
 
     public function getConversationParticipants(Conversation $conversation)
     {

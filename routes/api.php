@@ -23,5 +23,6 @@ Route::middleware('auth:sanctum')->group(function () {
     
     Route::get('/conversations/recent', [ConversationController::class, 'recent']);
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show']);
+    Route::post('/conversations/{conversation}/read', [ConversationController::class, 'markAsRead']);
 
 });

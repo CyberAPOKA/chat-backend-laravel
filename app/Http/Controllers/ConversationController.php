@@ -48,4 +48,13 @@ class ConversationController extends Controller
             $this->service->getConversationParticipants($conversation)
         );
     }
+
+    public function markAsRead(Conversation $conversation)
+    {
+        $conversation->users()->updateExistingPivot(auth()->id(), [
+            'last_read_at' => now(),
+        ]);
+
+        return response()->json(['status' => 'read']);
+    }
 }

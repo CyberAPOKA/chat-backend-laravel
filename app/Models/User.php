@@ -60,17 +60,11 @@ class User extends Authenticatable
         ];
     }
 
-
-    // public function conversations()
-    // {
-    //     return $this->belongsToMany(Conversation::class)
-    //         ->withPivot(['last_read_at', 'joined_at'])
-    //         ->withTimestamps();
-    // }
-
     public function conversations()
     {
-        return $this->belongsToMany(Conversation::class)->withTimestamps();
+        return $this->belongsToMany(Conversation::class)
+            ->withPivot(['last_read_at', 'joined_at'])
+            ->withTimestamps();
     }
 
     public function messages()
